@@ -1,0 +1,34 @@
+[package]
+name = "blip"
+version = "1.0.0"
+edition = "2021"
+authors = ["Fabio Corona"]
+description = "A Bluetooth LE MIDI bridge for AKAI LPK25 Wireless keyboard"
+license = "MIT"
+repository = "https://github.com/00xBAD/BLIP"
+readme = "README.md"
+keywords = ["midi", "bluetooth", "ble", "akai", "music", "lpk25", "wireless"]
+categories = ["multimedia::audio", "hardware-support"]
+
+[dependencies]
+btleplug = "0.11"
+tokio = { version = "1.0", features = ["full"] }
+futures = "0.3"
+uuid = "1.0"
+log = "0.4"
+env_logger = "0.10"
+anyhow = "1.0"
+windows = { version = "0.52", features = [
+    "Win32_Media_Audio",
+    "Win32_Foundation",
+    "Win32_System_LibraryLoader",
+    "Win32_System_Console"
+] }
+
+[build-dependencies]
+winres = "0.1.12"
+
+[dev-dependencies]
+tokio-test = "0.4"
+mockall = "0.12"
+async-trait = "0.1"

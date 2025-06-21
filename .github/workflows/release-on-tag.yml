@@ -1,0 +1,68 @@
+name: Release on tag
+
+# Add permissions block at the top level
+permissions:
+  contents: write # This is required for creating releases
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+
+env:
+  BINARY_NAME: BLIP.exe
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rs/toolchain@v1
+        with:
+          toolchain: stable
+          override: true
+
+      - name: Cache Cargo registry and build
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Get current time
+        id: current-time
+        shell: pwsh
+        run: echo "time=$(Get-Date -Format 'yyyy-MM-dd')" >> $env:GITHUB_OUTPUT
+
+      - name: Set zip name
+        id: setzip
+        shell: pwsh
+        run: |
+          $version = "${{ github.ref_name }}"
+          if (-not $version) { $version = "test" }
+          $zipName = "${{ env.BINARY_NAME }}-$version-${{ steps.current-time.outputs.time }}.zip"
+          echo "zip_name=$zipName" >> $env:GITHUB_OUTPUT
+
+      - name: Compress release binary
+        shell: pwsh
+        run: Compress-Archive -Path "target/release/${{ env.BINARY_NAME }}" -DestinationPath "${{ steps.setzip.outputs.zip_name }}"
+
+      - name: Create GitHub release from CHANGELOG.md
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ${{ steps.setzip.outputs.zip_name }}
+          body_path: CHANGELOG.md
+          name: "Release ${{ github.ref_name }} (${{ steps.current-time.outputs.time }})"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
